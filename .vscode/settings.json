@@ -1,0 +1,21 @@
+{
+    "chat.mcp.discovery.enabled": {
+        "claude-desktop": true,
+        "cursor-workspace": true
+    },
+    "chat.mcp.gallery.enabled": true,
+    "chat.mcp.assisted.nuget.enabled": true,
+    "chat.experimental.useSkillAdherencePrompt": true,
+    "chat.useNestedAgentsMdFiles": true,
+    "inlineChat.notebookAgent": true,
+    "claudeCode.enableNewConversationShortcut": true,
+    "claudeCode.useTerminal": true,
+    "claudeCode.useCtrlEnterToSend": true,
+    "kilo-code.new.attention.sound": "system",
+    "kilo-code.new.autoApprove.enabled": true,
+    "kilo-code.new.attention.enabled": true,
+    "kilo-code.new.autocomplete.enableChatAutocomplete": true,
+    "kilo-code.new.autocomplete.enableSmartInlineTaskKeybinding": true,
+    "kimi.editorContext": "onConversationStart",
+    "kimi.enableNewConversationShortcut": true
+}
