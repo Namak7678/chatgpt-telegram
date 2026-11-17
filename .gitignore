@@ -1,2 +1,4 @@
 .env
 vendor
+projects.json
+data/

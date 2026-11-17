@@ -1,0 +1,6 @@
+.git
+.env
+projects.json
+data
+*.db
+*.sqlite
