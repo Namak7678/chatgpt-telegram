@@ -5,6 +5,7 @@ ADD . .
 RUN make build
 
 FROM alpine
+WORKDIR /app
 COPY --from=builder /build/chatgpt-telegram /bin/chatgpt-telegram
 RUN chmod +x /bin/chatgpt-telegram
 

@@ -1,13 +1,14 @@
 package tgbot
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"time"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
-	"github.com/m1guelpf/chatgpt-telegram/src/chatgpt"
 	"github.com/m1guelpf/chatgpt-telegram/src/markdown"
+	"github.com/m1guelpf/chatgpt-telegram/src/ollama"
 	"github.com/m1guelpf/chatgpt-telegram/src/ratelimit"
 )
 
@@ -73,7 +74,7 @@ func (b *Bot) SendTyping(chatID int64) {
 	}
 }
 
-func (b *Bot) SendAsLiveOutput(chatID int64, replyTo int, feed chan chatgpt.ChatResponse) {
+func (b *Bot) SendAsLiveOutput(chatID int64, replyTo int, feed <-chan ollama.StreamEvent) (string, error) {
 	debouncedType := ratelimit.Debounce(10*time.Second, func() { b.SendTyping(chatID) })
 	debouncedEdit := ratelimit.DebounceWithArgs(b.editInterval, func(text interface{}, messageId interface{}) {
 		if err := b.SendEdit(chatID, messageId.(int), text.(string)); err != nil {
@@ -82,7 +83,7 @@ func (b *Bot) SendAsLiveOutput(chatID int64, replyTo int, feed chan chatgpt.Chat
 	})
 
 	var message tgbotapi.Message
-	var lastResp string
+	var responseText string
 
 pollResponse:
 	for {
@@ -94,20 +95,27 @@ pollResponse:
 				break pollResponse
 			}
 
-			lastResp = response.Message
+			if response.Err != nil {
+				return responseText, response.Err
+			}
+			responseText += response.Text
 
 			if message.MessageID == 0 {
 				var err error
-				if message, err = b.Send(chatID, replyTo, lastResp); err != nil {
-					log.Fatalf("Couldn't send message: %v", err)
+				if message, err = b.Send(chatID, replyTo, responseText); err != nil {
+					return responseText, err
 				}
 			} else {
-				debouncedEdit(lastResp, message.MessageID)
+				debouncedEdit(responseText, message.MessageID)
 			}
 		}
 	}
 
-	if err := b.SendEdit(chatID, message.MessageID, lastResp); err != nil {
-		log.Printf("Couldn't perform final edit on message: %v", err)
+	if responseText == "" {
+		return "", fmt.Errorf("model returned an empty response")
 	}
+	if err := b.SendEdit(chatID, message.MessageID, responseText); err != nil {
+		return responseText, err
+	}
+	return responseText, nil
 }

@@ -13,13 +13,21 @@ type EnvConfig struct {
 	TelegramID      []int64 `mapstructure:"TELEGRAM_ID"`
 	TelegramToken   string  `mapstructure:"TELEGRAM_TOKEN"`
 	EditWaitSeconds int     `mapstructure:"EDIT_WAIT_SECONDS"`
+	OllamaURL       string  `mapstructure:"OLLAMA_URL"`
+	OllamaModel     string  `mapstructure:"OLLAMA_MODEL"`
+	DataDir         string  `mapstructure:"DATA_DIR"`
+	ProjectsFile    string  `mapstructure:"PROJECTS_FILE"`
 }
 
 // emptyConfig is used to initialize viper.
 // It is required to register config keys with viper when in case no config file is provided.
 const emptyConfig = `TELEGRAM_ID=
 TELEGRAM_TOKEN=
-EDIT_WAIT_SECONDS=`
+EDIT_WAIT_SECONDS=
+OLLAMA_URL=
+OLLAMA_MODEL=
+DATA_DIR=./data
+PROJECTS_FILE=projects.json`
 
 func (e *EnvConfig) HasTelegramID(id int64) bool {
 	for _, v := range e.TelegramID {
@@ -55,6 +63,15 @@ func LoadEnvConfig(path string) (*EnvConfig, error) {
 	if err := v.Unmarshal(&cfg); err != nil {
 		return nil, err
 	}
+	if cfg.OllamaURL == "" {
+		cfg.OllamaURL = "http://localhost:11434"
+	}
+	if cfg.DataDir == "" {
+		cfg.DataDir = "./data"
+	}
+	if cfg.ProjectsFile == "" {
+		cfg.ProjectsFile = "projects.json"
+	}
 	return &cfg, nil
 }
 
@@ -70,11 +87,28 @@ func (e *EnvConfig) ValidateWithDefaults() error {
 		return errors.New("TELEGRAM_TOKEN is not set")
 	}
 	if len(e.TelegramID) == 0 {
-		log.Printf("TELEGRAM_ID is not set, all users will be able to use the bot")
+		return errors.New("TELEGRAM_ID must contain at least one allowed Telegram user ID")
 	}
-	if e.EditWaitSeconds < 0 {
-		log.Printf("EDIT_WAIT_SECONDS not set, defaulting to 1")
+	for _, id := range e.TelegramID {
+		if id <= 0 {
+			return errors.New("TELEGRAM_ID values must be positive Telegram user IDs")
+		}
+	}
+	if e.EditWaitSeconds <= 0 {
+		log.Printf("EDIT_WAIT_SECONDS not set or invalid, defaulting to 1")
 		e.EditWaitSeconds = 1
+	}
+	if e.OllamaURL == "" {
+		return errors.New("OLLAMA_URL is not set")
+	}
+	if e.OllamaModel == "" {
+		return errors.New("OLLAMA_MODEL is not set")
+	}
+	if e.DataDir == "" {
+		return errors.New("DATA_DIR is not set")
+	}
+	if e.ProjectsFile == "" {
+		return errors.New("PROJECTS_FILE is not set")
 	}
 	return nil
 }

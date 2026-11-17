@@ -127,7 +127,27 @@ EDIT_WAIT_SECONDS=10`,
 
 			cfg, err := LoadEnvConfig("test.env")
 			require.NoError(t, err)
+			test.want.OllamaURL = "http://localhost:11434"
+			test.want.OllamaModel = ""
+			test.want.DataDir = "./data"
+			test.want.ProjectsFile = "projects.json"
 			require.Equal(t, test.want, cfg)
 		})
 	}
+}
+
+func TestValidateRequiresAllowedTelegramUsers(t *testing.T) {
+	cfg := &EnvConfig{TelegramToken: "token"}
+	require.ErrorContains(t, cfg.ValidateWithDefaults(), "TELEGRAM_ID")
+
+	cfg.TelegramID = []int64{123}
+	cfg.OllamaURL = "http://localhost:11434"
+	cfg.OllamaModel = "qwen2.5:7b"
+	cfg.DataDir = "./data"
+	cfg.ProjectsFile = "projects.json"
+	require.NoError(t, cfg.ValidateWithDefaults())
+	require.Equal(t, 1, cfg.EditWaitSeconds)
+
+	cfg.TelegramID = []int64{0}
+	require.ErrorContains(t, cfg.ValidateWithDefaults(), "positive Telegram user IDs")
 }
